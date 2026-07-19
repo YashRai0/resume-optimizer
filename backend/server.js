@@ -12,7 +12,11 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 // Enable CORS for frontend clients
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'] }))
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? 'https://resume-optimizer-nine-mu.vercel.app'
+    : ['http://localhost:5173', 'http://localhost:5174']
+}))
 app.use(express.json())
 
 // Connect to Database (with in-memory fallback)
@@ -31,6 +35,7 @@ app.use((err, req, res, next) => {
   console.error('Unhandled Server Error:', err)
   res.status(500).json({ error: 'Internal server error: ' + err.message })
 })
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET
@@ -70,6 +75,7 @@ app.post('/api/verify-payment', (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
   console.log(`📡 Endpoints active under http://localhost:${PORT}/api`)

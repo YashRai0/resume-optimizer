@@ -10,14 +10,13 @@ import {
   Cpu, Award, GitCompare, Compass, UserCheck, HelpCircle, X, History
 } from 'lucide-react'
 
-const BACKEND_URL = 'http://localhost:5000'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
 
 export default function Dashboard() {
   const { user, isLoaded: clerkLoaded, isSignedIn } = useUser()
   const navigate = useNavigate()
   const [clerkTimeout, setClerkTimeout] = useState(false)
   
-  // Auto fallback to guest mode if Clerk doesn't load in 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!clerkLoaded) {
@@ -30,39 +29,31 @@ export default function Dashboard() {
 
   const isLoaded = clerkLoaded || clerkTimeout
   
-  // Navigation & Workspace Tabs
-  const [activeTab, setActiveTab] = useState('optimize') // 'optimize' or 'coverletter'
+  const [activeTab, setActiveTab] = useState('optimize')
   
-  // Form State
   const [jobDescription, setJobDescription] = useState('')
   const [resumeText, setResumeText] = useState('')
   const [fileName, setFileName] = useState('')
   const [fileParsing, setFileParsing] = useState(false)
   
-  // API Call States
   const [loading, setLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [result, setResult] = useState(null)
   
-  // Bullets State with Granular Tuning Metadata
-  const [bullets, setBullets] = useState([]) // Array of { original, optimized, focus, loading }
+  const [bullets, setBullets] = useState([])
   
-  // Keyword Injector States
   const [activeKeyword, setActiveKeyword] = useState(null)
   const [targetBulletIdx, setTargetBulletIdx] = useState(0)
   const [injecting, setInjecting] = useState(false)
   
-  // Cover Letter States
   const [coverLetterTone, setCoverLetterTone] = useState('Professional')
   const [coverLetter, setCoverLetter] = useState('')
   const [coverLetterLoading, setCoverLetterLoading] = useState(false)
   const [coverLetterCopied, setCoverLetterCopied] = useState(false)
 
-  // Copy/Download UI States
   const [copiedBulletIdx, setCopiedBulletIdx] = useState(null)
   const [copySuccess, setCopySuccess] = useState(false)
 
-  // Clerk Auth and History States
   const { getToken } = useAuth()
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyList, setHistoryList] = useState([])
@@ -126,7 +117,6 @@ export default function Dashboard() {
 
   const [isDragActive, setIsDragActive] = useState(false)
 
-  // File Upload Parser Handler
   const handleFileUpload = async (file) => {
     if (!file) return
     if (file.type !== 'application/pdf') {
@@ -183,7 +173,6 @@ export default function Dashboard() {
     }
   }
 
-  // Optimize Resume Call
   const handleOptimize = async () => {
     if (!resumeText.trim() || !jobDescription.trim()) {
       toast.error('Please enter both your Resume and the Job Description')
@@ -208,7 +197,6 @@ export default function Dashboard() {
       }, { headers })
       setResult(res.data)
       
-      // Initialize interactive bullets list
       const formattedBullets = (res.data.optimizedBullets || []).map(b => ({
         original: typeof b === 'object' ? b.original : b,
         optimized: typeof b === 'object' ? b.optimized : b,
@@ -217,7 +205,7 @@ export default function Dashboard() {
       }))
       setBullets(formattedBullets)
       toast.success('Resume analyzed & optimized!')
-      fetchHistory() // Refresh history list
+      fetchHistory()
     } catch (err) {
       toast.error('Optimization failed. Please try again.')
       console.error(err)
@@ -227,12 +215,10 @@ export default function Dashboard() {
     }
   }
 
-  // Optimize Single Bullet Point Inline (AI Workbench & Keyword Injection)
   const tuneSingleBullet = async (idx, selectedFocus, injectKeyword = null) => {
     const targetBullet = bullets[idx]
     if (!targetBullet) return
 
-    // Update bullet loading state
     const updatedBullets = [...bullets]
     updatedBullets[idx] = { ...targetBullet, loading: true }
     setBullets(updatedBullets)
@@ -264,7 +250,6 @@ export default function Dashboard() {
     }
   }
 
-  // Handle Missing Keyword Injection Click
   const handleInjectKeyword = async () => {
     if (!activeKeyword) return
     setInjecting(true)
@@ -273,7 +258,6 @@ export default function Dashboard() {
     setActiveKeyword(null)
   }
 
-  // Cover Letter Generator Call
   const handleGenerateCoverLetter = async () => {
     if (!resumeText.trim() || !jobDescription.trim()) {
       toast.error('Please upload your resume text and target job description first')
@@ -302,11 +286,9 @@ export default function Dashboard() {
     }
   }
 
-  // Diff Highlighter Engine (Highlights words added by AI in neon-green)
   const renderBulletDiff = (original, optimized) => {
     if (!original) return <span className="text-gray-300">{optimized}</span>
     
-    // Clean words for comparison lookup
     const origWords = original
       .split(/\s+/)
       .map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase())
@@ -316,7 +298,6 @@ export default function Dashboard() {
     
     return optWords.map((word, idx) => {
       const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase()
-      // If word is not in original bullet, highlight it
       const isAdded = cleanWord && !origWords.includes(cleanWord)
       return (
         <span key={idx} className={isAdded ? "diff-added mx-0.5" : "mx-0.5 text-gray-300"}>
@@ -326,7 +307,6 @@ export default function Dashboard() {
     })
   }
 
-  // Copy single bullet
   const copyBullet = (text, idx) => {
     navigator.clipboard.writeText(text)
     setCopiedBulletIdx(idx)
@@ -334,7 +314,6 @@ export default function Dashboard() {
     setTimeout(() => setCopiedBulletIdx(null), 2000)
   }
 
-  // Copy all optimized bullets
   const copyAllBullets = () => {
     const textToCopy = bullets.map(b => b.optimized).join('\n')
     navigator.clipboard.writeText(textToCopy)
@@ -343,14 +322,12 @@ export default function Dashboard() {
     setTimeout(() => setCopySuccess(false), 2000)
   }
 
-  // Update Bullet manually in editor
   const handleManualEdit = (idx, value) => {
     const updated = [...bullets]
     updated[idx] = { ...updated[idx], optimized: value }
     setBullets(updated)
   }
 
-  // Download bullets
   const downloadBullets = () => {
     const element = document.createElement("a")
     const file = new Blob([bullets.map(b => b.optimized).join('\r\n\r\n')], {type: 'text/plain'})
@@ -360,6 +337,24 @@ export default function Dashboard() {
     element.click()
     document.body.removeChild(element)
     toast.success('Downloaded bullets!')
+  }
+
+  const copyCoverLetter = () => {
+    navigator.clipboard.writeText(coverLetter)
+    setCoverLetterCopied(true)
+    toast.success('Cover letter copied!')
+    setTimeout(() => setCoverLetterCopied(false), 2000)
+  }
+
+  const downloadCoverLetter = () => {
+    const element = document.createElement("a")
+    const file = new Blob([coverLetter], { type: 'text/plain' })
+    element.href = URL.createObjectURL(file)
+    element.download = "Cover_Letter.txt"
+    document.body.appendChild(element)
+    element.click()
+    document.body.removeChild(element)
+    toast.success('Cover letter downloaded!')
   }
 
   const getScoreRatingDetails = (score) => {
@@ -379,11 +374,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col font-sans relative overflow-hidden grid-mesh">
       
-      {/* 2026 Background Ambient Mesh & Lights */}
       <div className="glow-orb w-[500px] h-[500px] bg-blue-600/10 top-[-100px] right-[-100px]" />
       <div className="glow-orb w-[400px] h-[400px] bg-purple-600/10 bottom-[-100px] left-[-100px]" />
 
-      {/* Workspace Header */}
       <header className="border-b border-gray-900 bg-gray-950/70 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/" className="text-xl font-bold flex items-center gap-2">
@@ -434,7 +427,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Mobile Navigation Tabs */}
       <div className="flex sm:hidden border-b border-gray-900 bg-gray-950 p-2 gap-2 z-10">
         <button 
           onClick={() => setActiveTab('optimize')}
@@ -450,16 +442,13 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Workspace Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-8 z-10 relative">
         
         {activeTab === 'optimize' ? (
           <div className="space-y-8">
             
-            {/* Input Phase */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               
-              {/* Job Description (Left) */}
               <div className="lg:col-span-6 bg-gray-900/30 border border-gray-900 rounded-2xl p-6 backdrop-blur-sm card-glow flex flex-col justify-between">
                 <div>
                   <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
@@ -476,7 +465,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Resume Details (Right) */}
               <div className="lg:col-span-6 bg-gray-900/30 border border-gray-900 rounded-2xl p-6 backdrop-blur-sm card-glow flex flex-col justify-between">
                 <div>
                   <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
@@ -485,7 +473,6 @@ export default function Dashboard() {
                   </h3>
                   <p className="text-gray-400 text-xs mb-4">Upload your PDF resume directly or paste the text content below.</p>
                   
-                  {/* Dropzone area */}
                   <div 
                     onDragEnter={handleDrag}
                     onDragOver={handleDrag}
@@ -528,7 +515,6 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Optimize CTA Button */}
             <div className="text-center">
               <button
                 onClick={handleOptimize}
@@ -539,7 +525,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Loading step screen */}
             {loading && (
               <div className="bg-gray-900/60 border border-gray-850 rounded-2xl p-8 max-w-2xl mx-auto flex flex-col items-center justify-center space-y-6 backdrop-blur shadow-2xl">
                 <div className="w-16 h-16 relative">
@@ -555,7 +540,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Keyword Injector Modal Overlay */}
             {activeKeyword && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/70 backdrop-blur-sm px-4">
                 <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full relative animate-fadeIn shadow-2xl shadow-blue-900/10">
@@ -609,14 +593,11 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Optimization Results Panel */}
             {result && (
               <div className="space-y-8 animate-fadeIn">
                 
-                {/* Scorecard and critical metrics */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   
-                  {/* Left Column: ATS Score & Key stats */}
                   <div className="lg:col-span-5 bg-gray-900/40 border border-gray-900 rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
                     <div>
                       <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
@@ -624,7 +605,6 @@ export default function Dashboard() {
                         <span>ATS Alignment Score</span>
                       </h3>
                       
-                      {/* Circular score display with 2026 aesthetics */}
                       <div className="flex flex-col items-center justify-center py-6">
                         <div className="relative w-44 h-44 flex items-center justify-center">
                           <svg className="absolute w-full h-full transform -rotate-90">
@@ -667,7 +647,6 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* General Recommendation Summary */}
                       <div className="bg-gray-950/80 border border-gray-850 rounded-xl p-4 mt-4">
                         <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider flex items-center gap-1">
                           <Cpu className="w-3.5 h-3.5 text-blue-400" />
@@ -678,10 +657,8 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Right Column: Keyword cloud & layout audit */}
                   <div className="lg:col-span-7 bg-gray-900/40 border border-gray-900 rounded-2xl p-6 space-y-6 backdrop-blur">
                     
-                    {/* Missing Keywords cloud */}
                     <div>
                       <h4 className="text-sm font-bold text-gray-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
                         <AlertTriangle className="w-4 h-4 text-rose-400 animate-pulse" />
@@ -708,7 +685,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Found Keywords cloud */}
                     <div>
                       <h4 className="text-sm font-bold text-gray-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -730,7 +706,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Critical Issues & formatting */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-800/80 pt-6">
                       
                       <div>
@@ -762,7 +737,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Bullets Workbench Section */}
                 <div className="bg-gray-900/35 border border-gray-900 rounded-2xl p-6 backdrop-blur">
                   
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-855 pb-4 mb-6 gap-4">
@@ -792,7 +766,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Interactively Rendered Bullets List */}
                   <div className="space-y-6">
                     {bullets.map((b, idx) => (
                       <div 
@@ -801,7 +774,6 @@ export default function Dashboard() {
                           b.loading ? 'border-blue-500 shadow-md shadow-blue-500/5' : 'border-gray-855 hover:border-gray-800'
                         }`}
                       >
-                        {/* Loading spinner layer */}
                         {b.loading && (
                           <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-sm z-10 flex items-center justify-center gap-2">
                             <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
@@ -811,7 +783,6 @@ export default function Dashboard() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                           
-                          {/* Original Bullet Column (Red/obsolete style) */}
                           <div className="lg:col-span-5 flex flex-col justify-between">
                             <div>
                               <span className="text-[10px] font-extrabold text-rose-400/70 uppercase tracking-widest mb-1.5 inline-block">Original Sentence</span>
@@ -819,10 +790,8 @@ export default function Dashboard() {
                             </div>
                           </div>
 
-                          {/* Divider for desktop */}
                           <div className="hidden lg:block lg:col-span-1 border-l border-gray-900 justify-self-center my-2" />
 
-                          {/* Optimized Bullet Column (Highlighted Diff text and editing tools) */}
                           <div className="lg:col-span-6 flex flex-col justify-between">
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
@@ -833,7 +802,6 @@ export default function Dashboard() {
                                 </span>
                               </div>
                               
-                              {/* Visual Word Diff Block */}
                               <div className="bg-gray-900/50 border border-gray-900 rounded-xl p-3.5 mb-3 leading-relaxed text-sm">
                                 {renderBulletDiff(b.original, b.optimized)}
                               </div>
@@ -845,10 +813,8 @@ export default function Dashboard() {
                               />
                             </div>
 
-                            {/* Bullet controls bar */}
                             <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
                               
-                              {/* Tuning Focus Switches */}
                               <div className="flex items-center gap-1.5 bg-gray-900/80 border border-gray-855 p-1 rounded-lg">
                                 <button
                                   onClick={() => tuneSingleBullet(idx, 'Metrics')}
@@ -873,7 +839,6 @@ export default function Dashboard() {
                                 </button>
                               </div>
 
-                              {/* Action items */}
                               <button
                                 onClick={() => copyBullet(b.optimized, idx)}
                                 className="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-850 border border-gray-850 text-gray-400 hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition"
@@ -897,7 +862,6 @@ export default function Dashboard() {
 
           </div>
         ) : (
-          /* Cover Letter Tab */
           <div className="bg-gray-900/30 border border-gray-900 rounded-2xl p-6 md:p-8 space-y-8 animate-fadeIn max-w-4xl mx-auto backdrop-blur">
             
             <div className="border-b border-gray-800 pb-4">
@@ -908,7 +872,6 @@ export default function Dashboard() {
               <p className="text-gray-400 text-xs mt-1">Draft a custom cover letter mapped directly to the job description and your experience details.</p>
             </div>
 
-            {/* Form settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <div>
                 <label className="block text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-2.5">Select Letter Tone</label>
@@ -943,7 +906,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Error fallback advice */}
             {(!resumeText || !jobDescription) && (
               <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex items-start gap-3">
                 <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
@@ -953,7 +915,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Generated output */}
             {coverLetter && (
               <div className="space-y-4 border-t border-gray-800/80 pt-8 animate-fadeIn">
                 <div className="flex items-center justify-between">
@@ -977,7 +938,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Letter body */}
                 <div className="bg-white text-gray-900 border border-gray-200 rounded-xl p-6 md:p-8 font-mono text-sm leading-relaxed shadow-lg whitespace-pre-wrap">
                   {coverLetter}
                 </div>
@@ -989,16 +949,13 @@ export default function Dashboard() {
 
       </main>
 
-      {/* History Slide-over Drawer */}
       {historyOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setHistoryOpen(false)}
           />
           
-          {/* Drawer content */}
           <div className="relative w-full max-w-md bg-gray-900 border-l border-gray-805 h-full shadow-2xl flex flex-col z-10 animate-slide-in font-sans">
             <div className="p-6 border-b border-gray-850 flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
