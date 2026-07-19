@@ -3,6 +3,8 @@ import { useUser } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
+
 const plans = [
   {
     name: 'Free',
@@ -69,7 +71,7 @@ export default function Pricing() {
     setLoading(plan.plan)
 
     try {
-      const { data: order } = await axios.post('http://localhost:5000/api/create-order', {
+      const { data: order } = await axios.post(`${BACKEND_URL}/api/create-order`, {
         plan: plan.plan
       })
 
@@ -82,7 +84,7 @@ export default function Pricing() {
         order_id: order.id,
         handler: async (response) => {
           try {
-            const { data } = await axios.post('http://localhost:5000/api/verify-payment', response)
+            const { data } = await axios.post(`${BACKEND_URL}/api/verify-payment`, response)
             if (data.success) {
               await user.update({ publicMetadata: { plan: 'pro' } })
               alert('Payment successful! You are now Pro 🎉')
