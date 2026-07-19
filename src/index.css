@@ -1,0 +1,125 @@
+@tailwind base; 
+@tailwind components; 
+@tailwind utilities; 
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-white selection:bg-blue-500/30 selection:text-blue-200;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #030712;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 9999px;
+  border: 2px solid #030712;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Dynamic Ambient Glow Orbs */
+.glow-orb {
+  position: absolute;
+  border-radius: 9999px;
+  mix-blend-mode: screen;
+  filter: blur(140px);
+  opacity: 0.15;
+  pointer-events: none;
+  animation: float 20s infinite alternate;
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(100px, 80px) scale(1.2);
+  }
+  100% {
+    transform: translate(-50px, -30px) scale(0.9);
+  }
+}
+
+/* Interactive Grid Background Mesh */
+.grid-mesh {
+  background-image: 
+    linear-gradient(to right, rgba(55, 65, 81, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(55, 65, 81, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glassmorphic border glow animation */
+.card-glow {
+  position: relative;
+  transition: all 0.3s ease;
+}
+.card-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(99, 102, 241, 0.3) 50%, transparent 100%);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.card-glow:hover::before {
+  opacity: 1;
+}
+
+/* Visual Diff Highlights */
+.diff-added {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.diff-removed {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  text-decoration: line-through;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Fade in effects */
+.animate-fadeIn {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Drawer Slide-in Animation */
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
