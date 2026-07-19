@@ -23,7 +23,7 @@ export default function Navbar() {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-gray-400 hover:text-white text-sm font-medium transition">Features</a>
-          <a href="#pricing" className="text-gray-400 hover:text-white text-sm font-medium transition">Pricing</a>
+          <Link to="/pricing" className="text-gray-400 hover:text-white text-sm font-medium transition">Pricing</Link>
           
           {isLoaded && (
             <>
@@ -68,13 +68,13 @@ export default function Navbar() {
           >
             Features
           </a>
-          <a 
-            href="#pricing" 
+          <Link 
+            to="/pricing"
             onClick={() => setMenuOpen(false)}
             className="text-gray-400 hover:text-white text-base font-medium py-2 border-b border-gray-900"
           >
             Pricing
-          </a>
+          </Link>
           
           {isLoaded && (
             <>

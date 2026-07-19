@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react'
-import { Sparkles, FileText, CheckCircle2, ShieldCheck, Zap, ArrowRight, Star, Cpu, Award } from 'lucide-react'
+import { Sparkles, FileText, ShieldCheck, Zap, ArrowRight, Star, Cpu, Award } from 'lucide-react'
 import Navbar from '../components/Navbar'
 
 const features = [
@@ -34,25 +34,6 @@ const features = [
     icon: <Zap className="w-6 h-6 text-rose-400" />,
     title: 'Instant PDF Parsing',
     desc: 'Drag and drop your PDF resume. We extract text and optimize it in under 15 seconds.'
-  }
-]
-
-const plans = [
-  {
-    name: 'Free',
-    price: '₹0',
-    period: 'forever',
-    features: ['3 resume scans/month', 'ATS score checker', 'Basic recommendations', 'Text-only input'],
-    cta: 'Start Free',
-    highlight: false
-  },
-  {
-    name: 'Pro',
-    price: '₹499',
-    period: 'per month',
-    features: ['Unlimited scans', 'AI Bullet rewriter', 'Cover letter generator', 'Direct PDF uploads', 'Priority AI processing'],
-    cta: 'Get Pro',
-    highlight: true
   }
 ]
 
@@ -328,49 +309,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-24 px-4 bg-gray-900/10">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Simple, transparent pricing</h2>
-            <p className="text-gray-400 max-w-md mx-auto">No contracts or hidden fees. Choose what fits your career stage.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            {plans.map((plan, i) => (
-              <div key={i} className={`rounded-2xl p-8 border flex flex-col justify-between relative ${plan.highlight ? 'bg-gradient-to-b from-blue-950/20 to-indigo-950/20 border-blue-500/80 shadow-2xl shadow-blue-500/5' : 'bg-gray-900/40 border-gray-900'}`}>
-                {plan.highlight && (
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 border border-blue-400/20 text-white text-[10px] font-bold tracking-widest px-4 py-1 rounded-full uppercase shadow">
-                    Most Popular
-                  </span>
-                )}
-                
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <div className="mb-6 flex items-baseline gap-1">
-                    <span className="text-5xl font-extrabold">{plan.price}</span>
-                    <span className="text-gray-400 text-sm">/ {plan.period}</span>
-                  </div>
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feat, j) => (
-                      <li key={j} className="flex items-start gap-2.5 text-gray-300 text-sm">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" /> 
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <Link
-                  to={isLoaded && isSignedIn ? "/dashboard" : "/signup"}
-                  className={`w-full py-4 rounded-xl font-bold text-center block transition hover:scale-[1.01] ${plan.highlight ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/10' : 'bg-gray-850 hover:bg-gray-800 text-gray-300 border border-gray-800'}`}
-                >
-                  {plan.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Pricing CTA */}
+      <section className="py-24 px-4 bg-gray-900/10 text-center">
+        <h2 className="text-3xl md:text-5xl font-bold mb-4">Simple, transparent pricing</h2>
+        <p className="text-gray-400 max-w-md mx-auto mb-8">No contracts or hidden fees. Choose what fits your career stage.</p>
+        <Link
+          to="/pricing"
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl text-lg font-bold shadow-lg shadow-blue-500/10 transition hover:scale-[1.02]"
+        >
+          View Full Pricing <ArrowRight className="w-5 h-5" />
+        </Link>
       </section>
 
       {/* Footer */}
@@ -383,7 +331,7 @@ export default function Landing() {
           <p className="text-gray-500 text-sm">© 2026 ResumeAI · Built with Gemini for Indian job seekers 🇮🇳</p>
           <div className="flex gap-4">
             <a href="#features" className="text-gray-500 hover:text-gray-400 text-sm transition">Features</a>
-            <a href="#pricing" className="text-gray-500 hover:text-gray-400 text-sm transition">Pricing</a>
+            <Link to="/pricing" className="text-gray-500 hover:text-gray-400 text-sm transition">Pricing</Link>
           </div>
         </div>
       </footer>
