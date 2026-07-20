@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5000
 // Enable CORS for frontend clients
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? 'https://resume-optimizer-nine-mu.vercel.app'
+    ? 'https://resumeai4u.vercel.app'
     : ['http://localhost:5173', 'http://localhost:5174']
 }))
 app.use(express.json())
