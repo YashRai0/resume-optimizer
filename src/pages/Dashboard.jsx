@@ -59,15 +59,16 @@ export default function Dashboard() {
   const [historyList, setHistoryList] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
-  const fetchHistory = async () => {
+ const fetchHistory = async () => {
     setHistoryLoading(true)
     try {
       const token = await getToken()
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
       const res = await axios.get(`${BACKEND_URL}/api/history`, { headers })
-      setHistoryList(res.data || [])
+      setHistoryList(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.error("Failed to load history list:", err)
+      setHistoryList([])
     } finally {
       setHistoryLoading(false)
     }
