@@ -8,7 +8,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { getDbMode, memoryDb } from '../config/db.js'
 
 const require = createRequire(import.meta.url)
-const pdf = require('pdf-parse')
+const pdf = require('pdf-parse/lib/pdf-parse.js')
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage() })
