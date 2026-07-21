@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { clerkMiddleware } from '@clerk/express'
 import { connectDB } from './config/db.js'
 import resumeRouter from './routes/resume.js'
 import Razorpay from 'razorpay'
@@ -18,6 +19,9 @@ app.use(cors({
     : ['http://localhost:5173', 'http://localhost:5174']
 }))
 app.use(express.json())
+
+// Verifies Clerk session tokens on every request and populates req.auth
+app.use(clerkMiddleware())
 
 // Connect to Database (with in-memory fallback)
 connectDB()
