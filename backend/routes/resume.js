@@ -238,11 +238,11 @@ router.post('/parse-pdf', upload.single('file'), handleUpload)
 router.post('/resume/optimize', requireAuth, handleOptimize)
 router.post('/optimize', requireAuth, handleOptimize)
 
-router.post('/resume/generate-cover-letter', handleCoverLetter)
-router.post('/generate-cover-letter', handleCoverLetter)
+router.post('/resume/generate-cover-letter', requireAuth, handleCoverLetter)
+router.post('/generate-cover-letter', requireAuth, handleCoverLetter)
 
-router.post('/resume/optimize-single-bullet', handleSingleBullet)
-router.post('/optimize-single-bullet', handleSingleBullet)
+router.post('/resume/optimize-single-bullet', requireAuth, handleSingleBullet)
+router.post('/optimize-single-bullet', requireAuth, handleSingleBullet)
 
 // History Tracking Endpoints
 router.get('/history', requireAuth, async (req, res) => {
@@ -270,9 +270,10 @@ router.get('/history/:id', requireAuth, async (req, res) => {
     let record = null
 
     if (dbMode === 'mongodb') {
-      record = await Optimization.findById(id)
+      record = await Optimization.findOne({ _id: id, userId: req.user.id })
     } else {
       record = await memoryDb.getOptimizationById(id)
+      if (record && record.userId !== req.user.id) record = null
     }
 
     if (!record) {
