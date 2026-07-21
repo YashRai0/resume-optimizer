@@ -321,7 +321,6 @@ export default function Landing() {
           View Full Pricing <ArrowRight className="w-5 h-5" />
         </Link>
       </section>
-          <p className="text-gray-500 text-sm">© 2026 ResumeAI · Built for job seekers everywhere 🌍</p>
       {/* Footer */}
       <footer className="border-t border-gray-900 bg-gray-950 py-12 px-4 text-center">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
