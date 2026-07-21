@@ -30,12 +30,6 @@ app.get('/', (req, res) => {
 // Mount Modular Routes
 app.use('/api', resumeRouter)
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled Server Error:', err)
-  res.status(500).json({ error: 'Internal server error: ' + err.message })
-})
-
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET
@@ -74,6 +68,12 @@ app.post('/api/verify-payment', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
+})
+
+// Global Error Handler — must be registered LAST, after all routes
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err)
+  res.status(500).json({ error: 'Internal server error: ' + err.message })
 })
 
 app.listen(PORT, () => {
