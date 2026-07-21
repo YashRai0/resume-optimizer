@@ -13,7 +13,7 @@ const features = [
   {
     icon: <Cpu className="w-6 h-6 text-indigo-400" />,
     title: 'AI Bullet Optimizer',
-    desc: 'Gemini-powered AI rewrites your bullets to incorporate metrics and keywords automatically.'
+    desc: 'AI rewrites your bullets to incorporate metrics and keywords automatically.'
   },
   {
     icon: <FileText className="w-6 h-6 text-purple-400" />,
@@ -196,12 +196,13 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Interactive Tool / Estimator Widget */}
+     {/* Interactive Tool / Estimator Widget */}
       <section id="demo" className="py-24 px-4 bg-gray-900/30 border-y border-gray-900/80 relative">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Try the Live Quick Estimator</h2>
             <p className="text-gray-400 max-w-lg mx-auto">Select a role, write or check a sample bullet point, and see how our AI rewrites it instantly.</p>
+            <p className="text-xs text-amber-400/80 mt-2 font-medium">✨ Sample preview — try the real analysis with your own resume above</p>
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
@@ -320,7 +321,7 @@ export default function Landing() {
           View Full Pricing <ArrowRight className="w-5 h-5" />
         </Link>
       </section>
-
+          <p className="text-gray-500 text-sm">© 2026 ResumeAI · Built for job seekers everywhere 🌍</p>
       {/* Footer */}
       <footer className="border-t border-gray-900 bg-gray-950 py-12 px-4 text-center">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
@@ -328,7 +329,7 @@ export default function Landing() {
             <Sparkles className="w-5 h-5 text-blue-500" />
             <span className="font-bold text-white">ResumeAI</span>
           </div>
-          <p className="text-gray-500 text-sm">© 2026 ResumeAI · Built with Gemini for Indian job seekers 🇮🇳</p>
+          <p className="text-gray-500 text-sm">© 2026 ResumeAI · Built for job seekers everywhere 🌍</p>
           <div className="flex gap-4">
             <a href="#features" className="text-gray-500 hover:text-gray-400 text-sm transition">Features</a>
             <Link to="/pricing" className="text-gray-500 hover:text-gray-400 text-sm transition">Pricing</Link>
