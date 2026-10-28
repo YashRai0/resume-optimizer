@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { apiClient } from '../utils/apiClient'
+import { extractErrorMessage } from '../utils/errorMessage'
 import toast from 'react-hot-toast'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { JobDescriptionInput } from '../features/dashboard/JobDescriptionInput'
@@ -37,6 +38,8 @@ export default function Dashboard() {
   const [coverLetterTone, setCoverLetterTone] = useState('Professional')
   const [coverLetter, setCoverLetter] = useState('')
   const [coverLetterLoading, setCoverLetterLoading] = useState(false)
+  const [coverLetterError, setCoverLetterError] = useState('')
+  const coverLetterLoadingRef = useRef(false)
 
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyList, setHistoryList] = useState([])
@@ -89,7 +92,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error('History delete failed. HTTP status:', err.response?.status || 'network error')
-      toast.error('Failed to delete history item', { id: deleteToast })
+      toast.error(extractErrorMessage(err, 'Failed to delete history item'), { id: deleteToast })
     }
   }
 
@@ -175,7 +178,7 @@ export default function Dashboard() {
       toast.success('Resume analyzed & optimized!')
       fetchHistory()
     } catch (err) {
-      const message = err.response?.data?.error || 'We could not analyze this resume. Check your connection and try again.'
+      const message = extractErrorMessage(err, 'We could not analyze this resume. Check your connection and try again.')
       setOptimizationError(message)
       toast.error(message)
       console.error('Optimization failed. HTTP status:', err.response?.status || 'network error')
@@ -213,7 +216,7 @@ export default function Dashboard() {
       toast.success(injectKeyword ? `Keyword "${injectKeyword}" injected!` : `Bullet updated with ${selectedFocus} focus!`)
     } catch (err) {
       console.error('Bullet rewriting failed. HTTP status:', err.response?.status || 'network error')
-      toast.error(err.response?.data?.error || 'Failed to tune bullet point.')
+      toast.error(extractErrorMessage(err, 'Failed to tune bullet point.'))
       const rollbackBullets = [...bullets]
       rollbackBullets[idx] = { ...targetBullet, loading: false }
       setBullets(rollbackBullets)
@@ -229,13 +232,17 @@ export default function Dashboard() {
   }
 
   const handleGenerateCoverLetter = async () => {
+    if (coverLetterLoadingRef.current || coverLetterLoading) return
+
     if (!resumeText.trim() || !jobDescription.trim()) {
       toast.error('Please upload your resume text and target job description first')
       return
     }
 
+    coverLetterLoadingRef.current = true
     setCoverLetterLoading(true)
     setCoverLetter('')
+    setCoverLetterError('')
     const letterToast = toast.loading('Drafting cover letter...')
 
     try {
@@ -244,14 +251,22 @@ export default function Dashboard() {
         jobDescription,
         tone: coverLetterTone
       })
-      if (res.data && res.data.coverLetter) {
-        setCoverLetter(res.data.coverLetter)
+      const generated = typeof res.data?.coverLetter === 'string' ? res.data.coverLetter.trim() : ''
+      if (generated) {
+        setCoverLetter(generated)
         toast.success('Cover letter generated!', { id: letterToast })
+      } else {
+        const emptyMsg = 'Cover letter generation returned an empty result. Please try again.'
+        setCoverLetterError(emptyMsg)
+        toast.error(emptyMsg, { id: letterToast })
       }
     } catch (err) {
       console.error('Cover-letter generation failed. HTTP status:', err.response?.status || 'network error')
-      toast.error(err.response?.data?.error || 'Failed to generate cover letter. Try again.', { id: letterToast })
+      const message = extractErrorMessage(err, 'Failed to generate cover letter. Try again.')
+      setCoverLetterError(message)
+      toast.error(message, { id: letterToast })
     } finally {
+      coverLetterLoadingRef.current = false
       setCoverLetterLoading(false)
     }
   }
@@ -379,6 +394,8 @@ export default function Dashboard() {
             coverLetterTone={coverLetterTone}
             setCoverLetterTone={setCoverLetterTone}
             coverLetterLoading={coverLetterLoading}
+            coverLetterError={coverLetterError}
+            onClearError={() => setCoverLetterError('')}
             onGenerateCoverLetter={handleGenerateCoverLetter}
             hasResumeAndJD={Boolean(resumeText && jobDescription)}
             onSwitchToOptimizer={() => setActiveTab('optimize')}

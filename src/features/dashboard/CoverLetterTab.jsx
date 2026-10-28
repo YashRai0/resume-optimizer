@@ -7,6 +7,8 @@ export function CoverLetterTab({
   coverLetterTone,
   setCoverLetterTone,
   coverLetterLoading,
+  coverLetterError,
+  onClearError,
   onGenerateCoverLetter,
   hasResumeAndJD,
   onSwitchToOptimizer
@@ -14,6 +16,7 @@ export function CoverLetterTab({
   const [coverLetterCopied, setCoverLetterCopied] = useState(false)
 
   const copyCoverLetter = () => {
+    if (typeof coverLetter !== 'string' || !coverLetter.trim()) return
     navigator.clipboard.writeText(coverLetter)
     setCoverLetterCopied(true)
     toast.success('Cover letter copied!')
@@ -21,6 +24,7 @@ export function CoverLetterTab({
   }
 
   const downloadCoverLetter = () => {
+    if (typeof coverLetter !== 'string' || !coverLetter.trim()) return
     const element = document.createElement("a")
     const file = new Blob([coverLetter], { type: 'text/plain' })
     element.href = URL.createObjectURL(file)
@@ -79,6 +83,28 @@ export function CoverLetterTab({
         </button>
       </div>
 
+      {coverLetterError && (
+        <div role="alert" className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start justify-between gap-3 text-sm text-red-800">
+          <div>
+            <p className="font-semibold">{coverLetterError}</p>
+            {/plan|pro|upgrade/i.test(coverLetterError) && (
+              <a href="/pricing" className="mt-2 inline-block font-bold underline hover:text-red-950">
+                View Plans &amp; Upgrade &rarr;
+              </a>
+            )}
+          </div>
+          {onClearError && (
+            <button
+              type="button"
+              onClick={onClearError}
+              className="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1 rounded hover:bg-red-100 transition"
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
+
       {!hasResumeAndJD && (
         <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-800 shrink-0 mt-0.5" />
@@ -92,7 +118,7 @@ export function CoverLetterTab({
         </div>
       )}
 
-      {coverLetter && (
+      {typeof coverLetter === 'string' && coverLetter.trim() ? (
         <div className="space-y-4 border-t border-stone-200/80 pt-8 animate-fadeIn">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-stone-600 uppercase tracking-wider">AI Drafted Cover Letter</h4>
@@ -119,7 +145,7 @@ export function CoverLetterTab({
             {coverLetter}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -1,17 +1,21 @@
-﻿import { Component } from 'react'
+import { Component } from 'react'
 
 export class AppErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
   }
 
-  componentDidCatch(error) {
-    console.error('Application rendering failed:', error.name || 'Error')
+  componentDidCatch(error, errorInfo) {
+    console.error('Application rendering failed:', error, errorInfo)
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null })
   }
 
   render() {
@@ -21,9 +25,22 @@ export class AppErrorBoundary extends Component {
           <section className="max-w-lg text-center">
             <h1 className="text-2xl font-bold mb-3">ResumeAI4u could not load</h1>
             <p className="text-stone-600 mb-6">Refresh the page. If the problem continues, contact support.</p>
-            <button className="bg-stone-950 hover:bg-stone-800 text-white rounded-lg px-5 py-2 font-semibold" onClick={() => window.location.reload()}>
-              Refresh page
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                className="bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg px-5 py-2 font-semibold transition"
+                onClick={this.handleReset}
+              >
+                Try again
+              </button>
+              <button
+                type="button"
+                className="bg-stone-950 hover:bg-stone-800 text-white rounded-lg px-5 py-2 font-semibold transition"
+                onClick={() => window.location.reload()}
+              >
+                Refresh page
+              </button>
+            </div>
           </section>
         </main>
       )
