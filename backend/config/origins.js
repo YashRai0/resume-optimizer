@@ -1,11 +1,38 @@
+const DEFAULT_PRODUCTION_ORIGINS = ['https://resumeai4u.vercel.app']
+const DEFAULT_DEVELOPMENT_ORIGINS = [
+  'https://resumeai4u.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174'
+]
+
+export function normalizeOrigin(origin) {
+  if (typeof origin !== 'string') return ''
+  return origin.trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '')
+}
+
 export function getAllowedOrigins() {
-  return process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-    : (process.env.NODE_ENV === 'production'
-      ? ['https://resumeai4u.vercel.app']
-      : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'])
+  const configured = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS
+        .split(',')
+        .map(normalizeOrigin)
+        .filter(Boolean)
+    : []
+
+  if (configured.length > 0) {
+    if (process.env.NODE_ENV === 'production' && !configured.includes('https://resumeai4u.vercel.app')) {
+      return [...configured, 'https://resumeai4u.vercel.app']
+    }
+    return configured
+  }
+
+  return process.env.NODE_ENV === 'production'
+    ? DEFAULT_PRODUCTION_ORIGINS
+    : DEFAULT_DEVELOPMENT_ORIGINS
 }
 
 export function isAllowedOrigin(origin) {
-  return typeof origin === 'string' && getAllowedOrigins().includes(origin)
+  if (typeof origin !== 'string') return false
+  const normalized = normalizeOrigin(origin)
+  return getAllowedOrigins().includes(normalized)
 }

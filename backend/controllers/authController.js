@@ -86,17 +86,17 @@ export function createAuthController({
   return {
     getCsrf(req, res) {
       const refreshToken = getCookie(req, REFRESH_COOKIE)
-      let csrfToken
       try {
-        csrfToken = refreshToken && /^[a-f0-9]{64}$/.test(refreshToken)
+        const csrfToken = refreshToken && /^[a-f0-9]{64}$/.test(refreshToken)
           ? createCsrfToken(refreshToken)
           : createOpaqueToken()
-      } catch {
+        setCsrfCookie(res, csrfToken)
+        res.set('Cache-Control', 'no-store')
+        return res.json({ csrfToken })
+      } catch (error) {
+        console.error('CSRF token issuance failed:', error.code || error.name || 'Error')
         return res.status(503).json({ error: { code: 'AUTH_SERVICE_UNAVAILABLE', message: 'Authentication is temporarily unavailable.' } })
       }
-      setCsrfCookie(res, csrfToken)
-      res.set('Cache-Control', 'no-store')
-      return res.json({ csrfToken })
     },
 
     async register(req, res) {

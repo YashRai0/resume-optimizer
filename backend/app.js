@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { getAllowedOrigins } from './config/origins.js'
+import { isAllowedOrigin } from './config/origins.js'
 import resumeRouter from './routes/resume.js'
 import { createPaymentRouter } from './routes/payment.js'
 import { createAuthRouter } from './routes/auth.js'
@@ -29,18 +29,18 @@ export function createApp() {
   })
 
   // --- CORS Configuration ---
-  const allowedOrigins = getAllowedOrigins()
-
   app.use(cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (server-to-server, health checks)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || isAllowedOrigin(origin)) {
         callback(null, true)
       } else {
-        callback(new Error('CORS: Origin not allowed'))
+        // Omits Access-Control-Allow-Origin gracefully without throwing a 500 error
+        callback(null, false)
       }
     },
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 204
   }))
 
   // --- Body Size Limit ---
@@ -60,6 +60,13 @@ export function createApp() {
   app.use((err, req, res, next) => {
     const uploadStatus = err.code === 'LIMIT_FILE_SIZE' ? 413 : err.code?.startsWith('LIMIT_') ? 400 : 500
     const statusCode = err.status || err.statusCode || uploadStatus
+
+    // Ensure CORS headers are preserved on error responses for allowed origins
+    const requestOrigin = req.get('origin')
+    if (requestOrigin && isAllowedOrigin(requestOrigin)) {
+      res.setHeader('Access-Control-Allow-Origin', requestOrigin)
+      res.setHeader('Access-Control-Allow-Credentials', 'true')
+    }
 
     // Parser errors can carry the raw request body (including resume text).
     // Log metadata only so malformed requests do not put user content in logs.

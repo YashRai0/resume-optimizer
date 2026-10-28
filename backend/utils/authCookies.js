@@ -17,20 +17,23 @@ export function getCookie(req, name) {
 }
 
 function cookieOptions(maxAge, httpOnly) {
-  const sameSite = (process.env.AUTH_COOKIE_SAME_SITE || 'lax').toLowerCase()
+  const rawSameSite = process.env.AUTH_COOKIE_SAME_SITE
+  const sameSite = (typeof rawSameSite === 'string' ? rawSameSite.trim().replace(/^["']|["']$/g, '') : 'lax').toLowerCase()
   const secure = process.env.NODE_ENV === 'production'
   if (!['lax', 'strict', 'none'].includes(sameSite) || (sameSite === 'none' && !secure)) {
     const error = new Error('Authentication cookie settings are invalid.')
     error.code = 'AUTH_COOKIE_CONFIG_INVALID'
     throw error
   }
+  const rawDomain = process.env.AUTH_COOKIE_DOMAIN
+  const domain = typeof rawDomain === 'string' ? rawDomain.trim().replace(/^["']|["']$/g, '') : null
   return {
     httpOnly,
     secure,
     sameSite,
     path: '/api/auth',
     maxAge,
-    ...(process.env.AUTH_COOKIE_DOMAIN ? { domain: process.env.AUTH_COOKIE_DOMAIN } : {})
+    ...(domain ? { domain } : {})
   }
 }
 
