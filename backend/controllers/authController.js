@@ -1,6 +1,11 @@
 import argon2 from 'argon2'
 import { createAuthStore } from '../services/authStore.js'
-import { emailDeliveryConfigured, sendPasswordResetEmail, sendVerificationEmail } from '../services/emailService.js'
+import {
+  emailDeliveryConfigured,
+  logEmailConfigDiagnostics,
+  sendPasswordResetEmail,
+  sendVerificationEmail
+} from '../services/emailService.js'
 import {
   ACCESS_TOKEN_TTL,
   createAccessToken,
@@ -100,6 +105,7 @@ export function createAuthController({
         return res.status(400).json({ error: { code: validation.code, message: 'Enter a valid email and a password of at least 12 characters.' } })
       }
       if (!emailConfigured()) {
+        logEmailConfigDiagnostics()
         return res.status(503).json({ error: { code: 'EMAIL_NOT_CONFIGURED', message: 'Email verification is temporarily unavailable. Contact the site administrator.' } })
       }
 
@@ -268,6 +274,7 @@ export function createAuthController({
         return res.status(202).json({ message: 'If an account exists for that address, password-reset instructions will be sent.' })
       }
       if (!emailConfigured()) {
+        logEmailConfigDiagnostics()
         return res.status(503).json({ error: { code: 'EMAIL_NOT_CONFIGURED', message: 'Password recovery is temporarily unavailable. Contact the site administrator.' } })
       }
       try {

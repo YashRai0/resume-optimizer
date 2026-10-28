@@ -20,6 +20,13 @@ async function startServer() {
     return
   }
 
+  const { emailDeliveryConfigured, logEmailConfigDiagnostics } = await import('./services/emailService.js')
+  if (emailDeliveryConfigured()) {
+    console.log('✉️ Email delivery configured via Resend HTTPS API')
+  } else {
+    logEmailConfigDiagnostics()
+  }
+
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`)
     console.log(`📡 Endpoints active under http://localhost:${PORT}/api`)

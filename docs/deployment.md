@@ -22,7 +22,7 @@ This guide details deployment procedures for hosting the ResumeAI4u frontend on 
                        ┌─────────────────────┼─────────────────────┐
                        ▼                     ▼                     ▼
               ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-              │  MongoDB Atlas  │   │  Groq AI Cloud  │   │ Razorpay / SMTP │
+              │  MongoDB Atlas  │   │  Groq AI Cloud  │   │Razorpay / Resend│
               └─────────────────┘   └─────────────────┘   └─────────────────┘
 ```
 
@@ -60,6 +60,7 @@ Ensure all required variables listed in [docs/environment-variables.md](file:///
 - Set `ALLOWED_ORIGINS=https://resumeai4u.vercel.app,https://app.resumeai4u.com`.
 - Set `TRUST_PROXY_HOPS=1` (when deployed behind Render or cloud reverse proxies).
 - Set `APP_ORIGIN=https://resumeai4u.vercel.app` (must match the public frontend HTTPS origin).
+- Set `RESEND_API_KEY=re_...` and `EMAIL_FROM=ResumeAI4u <noreply@yourdomain.com>` for transactional verification and password reset emails (uses Resend HTTPS API over port 443; avoids outbound SMTP port blocking on Render).
 - Set `AUTH_COOKIE_SAME_SITE=lax` (or `none` if frontend and backend are on completely different domains; `none` requires `NODE_ENV=production`).
 - Set `AUTH_COOKIE_DOMAIN=.resumeai4u.com` if using sibling subdomains (e.g., `app.resumeai4u.com` and `api.resumeai4u.com`).
 

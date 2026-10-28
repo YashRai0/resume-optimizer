@@ -23,12 +23,8 @@ This document catalogs all environment variables used across the frontend and ba
 | `RAZORPAY_KEY_ID` | Yes | — | Razorpay merchant public key for order creation. |
 | `RAZORPAY_KEY_SECRET` | Yes | — | Razorpay merchant secret key for HMAC signature verification. |
 | `APP_ORIGIN` | Yes (for auth emails) | `http://localhost:3000` | Public base URL of the frontend application used to generate email verification and password reset links (e.g., `https://resumeai4u.vercel.app`). Must use HTTPS in production. |
-| `SMTP_HOST` | Yes (for auth emails) | — | Hostname for transactional email SMTP server (e.g., `smtp.sendgrid.net`, `smtp.mailgun.org`). |
-| `SMTP_PORT` | No | `587` | Port for SMTP server (`587` for TLS or `465` for SSL). |
-| `SMTP_SECURE` | No | `false` | Set to `true` when using direct SSL port 465. |
-| `SMTP_USER` | Yes (for auth emails) | — | SMTP username or API key. |
-| `SMTP_PASSWORD` | Yes (for auth emails) | — | SMTP password or API secret. |
-| `EMAIL_FROM` | Yes (for auth emails) | — | Sender email address (e.g., `noreply@resumeai4u.com`). |
+| `RESEND_API_KEY` | Yes (for auth emails) | — | Resend API key (`re_...`) for transactional email delivery over HTTPS (port 443). Required for signup verification and password reset. |
+| `EMAIL_FROM` | Yes (for auth emails) | — | Verified sender email address and display name (e.g., `ResumeAI4u <noreply@yourdomain.com>` or `onboarding@resend.dev` for testing). |
 
 ---
 

@@ -92,15 +92,21 @@ function fakeStore() {
   }
 }
 
-async function startServer({ store = fakeStore(), emailConfigured = () => true, useDefaultLimiters = false } = {}) {
+async function startServer({
+  store = fakeStore(),
+  emailConfigured = () => true,
+  verificationSender,
+  passwordResetSender,
+  useDefaultLimiters = false
+} = {}) {
   const sent = { verification: [], reset: [] }
   const noLimit = (_req, _res, next) => next()
   const routerOptions = {
     store,
     emailConfigured,
     databaseMode: () => 'mongodb',
-    verificationSender: async (email, token) => { sent.verification.push({ email, token }) },
-    passwordResetSender: async (email, token) => { sent.reset.push({ email, token }) }
+    verificationSender: verificationSender || (async (email, token) => { sent.verification.push({ email, token }) }),
+    passwordResetSender: passwordResetSender || (async (email, token) => { sent.reset.push({ email, token }) })
   }
   if (!useDefaultLimiters) {
     Object.assign(routerOptions, { loginLimiter: noLimit, registrationLimiter: noLimit, recoveryLimiter: noLimit, refreshLimiter: noLimit })
@@ -272,6 +278,20 @@ describe('First-party authentication routes', () => {
     const response = await server.request('/register', { method: 'POST', body: validRegistration })
     assert.equal(response.status, 503)
     assert.equal(server.store.users.size, 0)
+  })
+
+  it('fails safely with 503 when the email provider throws an error during delivery', async () => {
+    const deliveryError = new Error('Email provider error: Domain not verified')
+    deliveryError.code = 'EMAIL_DELIVERY_FAILED'
+    const server = await createServer({
+      emailConfigured: () => true,
+      verificationSender: async () => { throw deliveryError }
+    })
+    const response = await server.request('/register', { method: 'POST', body: validRegistration })
+    assert.equal(response.status, 503)
+    const body = await response.json()
+    assert.equal(body.error.code, 'AUTH_SERVICE_UNAVAILABLE')
+    assert.equal(body.error.message, 'Registration is temporarily unavailable. Please try again later.')
   })
 
   it('enforces the shared auth registration rate limit with a structured 429', async () => {

@@ -34,13 +34,13 @@ ResumeAI4u is an AI-assisted resume optimization application. It provides estima
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         Service & Worker Layer                              │
 │   authStore / tokens │ parseResume (Worker Thread) │ paymentStore & ledger  │
-│   emailService (SMTP)│ Groq AI API client          │ quota / counters       │
+│   emailService(Resend)│ Groq AI API client         │ quota / counters       │
 └──────────────────┬───────────────────┬───────────────────┬──────────────────┘
                    │                   │                   │
                    ▼                   ▼                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                      Persistence & External Services                        │
-│   MongoDB Atlas (Mongoose) │ Groq AI Cloud │ Razorpay Gateway │ SMTP Host   │
+│   MongoDB Atlas (Mongoose) │ Groq AI Cloud │ Razorpay Gateway │ Resend API  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
