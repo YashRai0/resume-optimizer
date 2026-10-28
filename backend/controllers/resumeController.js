@@ -12,13 +12,28 @@ export const MAX_JD_LENGTH = 20000       // ~20KB of text
 export const MAX_BULLET_LENGTH = 2000
 export const AI_TIMEOUT_MS = 45000       // 45 seconds
 
+export function getGroqModels() {
+  const configured = process.env.GROQ_MODEL ? process.env.GROQ_MODEL.trim() : null
+  const defaultModels = [
+    'openai/gpt-oss-120b',
+    'qwen/qwen3.8-27b',
+    'openai/gpt-oss-20b',
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant'
+  ]
+  if (configured) {
+    return [configured, ...defaultModels.filter(m => m !== configured)]
+  }
+  return defaultModels
+}
+
 export async function callGroqAPI(systemPrompt, userContent, isJson = false) {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     throw new Error('AI service is not configured (GROQ_API_KEY missing).')
   }
 
-  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768']
+  const models = getGroqModels()
   let lastError = null
 
   for (const model of models) {
@@ -54,32 +69,54 @@ export async function callGroqAPI(systemPrompt, userContent, isJson = false) {
 
       if (!response.ok) {
         const status = response.status
+        let errJson = null
+        try {
+          errJson = await response.json()
+        } catch {
+          // ignore
+        }
+        const groqMsg = errJson?.error?.message || `HTTP ${status}`
+
         if (status === 401 || status === 403) {
+          console.error(`AI authentication failed (${status}). Check GROQ_API_KEY.`)
           throw new Error(`AI authentication failed (${status}). Check GROQ_API_KEY.`)
         }
-        if (status === 400) {
-          throw new Error(`AI rejected the request (${status}). Input may be too large or malformed.`)
+        if (status === 404) {
+          console.warn(`Groq model ${model} not available (404); trying fallback.`)
+          lastError = new Error(`Model ${model} not available (404)`)
+          continue
         }
         if (status === 429) {
-          console.warn(`Groq model ${model} returned HTTP 429; trying next model.`)
+          console.warn(`Groq model ${model} rate limited (429); trying fallback.`)
           lastError = new Error(`Rate limited on ${model}`)
           continue
         }
-        throw new Error(`${model}: ${status}`)
+        if (status === 400) {
+          console.warn(`Groq model ${model} rejected request (400: ${groqMsg}); trying fallback.`)
+          lastError = new Error(`Model ${model} 400: ${groqMsg}`)
+          continue
+        }
+        console.warn(`Groq model ${model} failed (${status}: ${groqMsg}); trying fallback.`)
+        lastError = new Error(`${model}: ${status}`)
+        continue
       }
 
       const data = await response.json()
-      return data.choices[0].message.content
+      const content = data.choices?.[0]?.message?.content
+      if (!content || typeof content !== 'string') {
+        throw new Error(`Model ${model} returned empty content`)
+      }
+      return content
     } catch (err) {
       if (err.name === 'AbortError') {
-        console.warn(`Groq model ${model} timed out after ${AI_TIMEOUT_MS}ms`)
+        console.warn(`Groq model ${model} timed out after ${AI_TIMEOUT_MS}ms; trying fallback.`)
         lastError = new Error(`${model} timed out`)
         continue
       }
       if (err.message.includes('authentication failed')) {
         throw err
       }
-      console.warn(`Groq model ${model} failed:`, err.name || 'Error')
+      console.warn(`Groq model ${model} failed:`, err.message || err.name || 'Error')
       lastError = err
     }
   }
@@ -234,8 +271,8 @@ export async function handleOptimize(req, res) {
     if (!resumeText || typeof resumeText !== 'string' || resumeText.trim().length < 50) {
       return res.status(400).json({ error: 'Resume text is too short. Please provide at least 50 characters.' })
     }
-    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 20) {
-      return res.status(400).json({ error: 'Job description is too short. Please provide at least 20 characters.' })
+    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 10) {
+      return res.status(400).json({ error: 'Job description is too short. Please provide at least 10 characters (e.g. target job title or description).' })
     }
     if (resumeText.length > MAX_RESUME_LENGTH) {
       return res.status(400).json({ error: `Resume text exceeds maximum length of ${MAX_RESUME_LENGTH} characters.` })
@@ -336,8 +373,14 @@ Analyze the resume against this job description and return the JSON analysis.`
 
     res.json(savedRecord)
   } catch (error) {
-    console.error('Optimization endpoint error:', error.code || error.name || 'Error')
-    res.status(500).json({ error: 'Resume optimization failed. Please try again.' })
+    console.error('Optimization endpoint error:', error.message || error.name || 'Error')
+    const isAiAuth = error.message?.includes('GROQ_API_KEY')
+    const clientMessage = isAiAuth
+      ? 'AI service configuration error. Please contact the administrator.'
+      : (error.message?.includes('temporarily unavailable')
+        ? error.message
+        : 'Resume optimization failed. Please try again.')
+    res.status(500).json({ error: clientMessage })
   }
 }
 
@@ -348,8 +391,8 @@ export async function handleCoverLetter(req, res) {
     if (!resumeText || typeof resumeText !== 'string' || resumeText.trim().length < 50) {
       return res.status(400).json({ error: 'Resume text is required (minimum 50 characters).' })
     }
-    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 20) {
-      return res.status(400).json({ error: 'Job description is required (minimum 20 characters).' })
+    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 10) {
+      return res.status(400).json({ error: 'Job description is required (minimum 10 characters).' })
     }
     if (resumeText.length > MAX_RESUME_LENGTH) {
       return res.status(400).json({ error: 'Resume text is too long.' })
@@ -391,8 +434,14 @@ Write a ${selectedTone.toLowerCase()} cover letter for this candidate applying t
 
     res.json({ coverLetter: text.trim().slice(0, 5000) })
   } catch (error) {
-    console.error('Cover letter error:', error.code || error.name || 'Error')
-    res.status(500).json({ error: 'Cover letter generation failed. Please try again.' })
+    console.error('Cover letter error:', error.message || error.name || 'Error')
+    const isAiAuth = error.message?.includes('GROQ_API_KEY')
+    const clientMessage = isAiAuth
+      ? 'AI service configuration error. Please contact the administrator.'
+      : (error.message?.includes('temporarily unavailable')
+        ? error.message
+        : 'Cover letter generation failed. Please try again.')
+    res.status(500).json({ error: clientMessage })
   }
 }
 
@@ -403,8 +452,8 @@ export async function handleSingleBullet(req, res) {
     if (!bulletText || typeof bulletText !== 'string' || bulletText.trim().length < 10) {
       return res.status(400).json({ error: 'Bullet text is required (minimum 10 characters).' })
     }
-    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 20) {
-      return res.status(400).json({ error: 'Job description is required.' })
+    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 10) {
+      return res.status(400).json({ error: 'Job description is required (minimum 10 characters).' })
     }
     if (bulletText.length > MAX_BULLET_LENGTH) {
       return res.status(400).json({ error: 'Bullet text is too long.' })
@@ -434,8 +483,14 @@ export async function handleSingleBullet(req, res) {
 
     res.json({ optimizedBullet: text.trim().slice(0, 1000) })
   } catch (error) {
-    console.error('Single bullet error:', error.code || error.name || 'Error')
-    res.status(500).json({ error: 'Bullet optimization failed. Please try again.' })
+    console.error('Single bullet error:', error.message || error.name || 'Error')
+    const isAiAuth = error.message?.includes('GROQ_API_KEY')
+    const clientMessage = isAiAuth
+      ? 'AI service configuration error. Please contact the administrator.'
+      : (error.message?.includes('temporarily unavailable')
+        ? error.message
+        : 'Bullet optimization failed. Please try again.')
+    res.status(500).json({ error: clientMessage })
   }
 }
 

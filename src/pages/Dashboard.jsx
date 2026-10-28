@@ -175,8 +175,9 @@ export default function Dashboard() {
       toast.success('Resume analyzed & optimized!')
       fetchHistory()
     } catch (err) {
-      setOptimizationError('We could not analyze this resume. Check your connection and try again.')
-      toast.error('Optimization failed. Please try again.')
+      const message = err.response?.data?.error || 'We could not analyze this resume. Check your connection and try again.'
+      setOptimizationError(message)
+      toast.error(message)
       console.error('Optimization failed. HTTP status:', err.response?.status || 'network error')
     } finally {
       clearInterval(stepInterval)
@@ -212,7 +213,7 @@ export default function Dashboard() {
       toast.success(injectKeyword ? `Keyword "${injectKeyword}" injected!` : `Bullet updated with ${selectedFocus} focus!`)
     } catch (err) {
       console.error('Bullet rewriting failed. HTTP status:', err.response?.status || 'network error')
-      toast.error('Failed to tune bullet point.')
+      toast.error(err.response?.data?.error || 'Failed to tune bullet point.')
       const rollbackBullets = [...bullets]
       rollbackBullets[idx] = { ...targetBullet, loading: false }
       setBullets(rollbackBullets)
@@ -249,7 +250,7 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error('Cover-letter generation failed. HTTP status:', err.response?.status || 'network error')
-      toast.error('Failed to generate cover letter. Try again.', { id: letterToast })
+      toast.error(err.response?.data?.error || 'Failed to generate cover letter. Try again.', { id: letterToast })
     } finally {
       setCoverLetterLoading(false)
     }

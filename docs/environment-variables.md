@@ -19,7 +19,7 @@ This document catalogs all environment variables used across the frontend and ba
 | `AUTH_COOKIE_SAME_SITE` | No | `lax` | SameSite cookie attribute (`lax`, `strict`, or `none`). Note: `none` requires `NODE_ENV=production`. |
 | `AUTH_COOKIE_DOMAIN` | No | `undefined` | Domain for session cookies (omit in local development; set to `.yourdomain.com` for cross-subdomain sharing). |
 | `GROQ_API_KEY` | Yes | — | API key for Groq Cloud LLM acceleration. |
-| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Primary Groq model for resume analysis, ATS scoring, and bullet optimization (falls back to `llama-3.1-8b-instant`, `mixtral-8x7b-32768`). |
+| `GROQ_MODEL` | No | `openai/gpt-oss-120b` | Primary Groq model for resume analysis, ATS scoring, and bullet optimization (falls back to `qwen/qwen3.8-27b`, `openai/gpt-oss-20b`). |
 | `RAZORPAY_KEY_ID` | Yes | — | Razorpay merchant public key for order creation. |
 | `RAZORPAY_KEY_SECRET` | Yes | — | Razorpay merchant secret key for HMAC signature verification. |
 | `APP_ORIGIN` | Yes (for auth emails) | `http://localhost:3000` | Public base URL of the frontend application used to generate email verification and password reset links (e.g., `https://resumeai4u.vercel.app`). Must use HTTPS in production. |
