@@ -11,6 +11,8 @@ export function createPaymentRouter({
   razorpayFactory,
   paymentStore = createPaymentStore(),
   databaseMode = getDbMode,
+  getKeyId,
+  getKeySecret,
   paymentOrderLimiter = rateLimit({
     scope: 'payment-order',
     ...RATE_LIMIT_POLICY.paymentOrder,
@@ -26,7 +28,9 @@ export function createPaymentRouter({
   const controller = createPaymentController({
     paymentStore,
     razorpayFactory,
-    databaseMode
+    databaseMode,
+    getKeyId,
+    getKeySecret
   })
 
   router.post('/create-order', authMiddleware, paymentOrderLimiter, controller.createOrder)

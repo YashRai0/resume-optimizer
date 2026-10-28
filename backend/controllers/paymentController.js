@@ -6,11 +6,45 @@ import { getDbMode } from '../config/db.js'
 import { createPaymentStore } from '../services/paymentStore.js'
 import Razorpay from 'razorpay'
 
-function createRazorpayClient() {
-  const keyId = process.env.RAZORPAY_KEY_ID
-  const keySecret = process.env.RAZORPAY_KEY_SECRET
-  if (!keyId || !keySecret) return null
+export function getRazorpayConfig() {
+  const rawKeyId = process.env.RAZORPAY_KEY_ID?.trim()
+  const rawKeySecret = process.env.RAZORPAY_KEY_SECRET?.trim()
+  const missing = []
+  if (!rawKeyId) missing.push('RAZORPAY_KEY_ID')
+  if (!rawKeySecret) missing.push('RAZORPAY_KEY_SECRET')
+
+  if (rawKeyId && rawKeyId.startsWith('<') && rawKeyId.endsWith('>')) {
+    console.warn('[paymentService] RAZORPAY_KEY_ID appears to contain placeholder angle brackets "<...>"; check your environment settings.')
+  }
+  if (rawKeySecret && rawKeySecret.startsWith('<') && rawKeySecret.endsWith('>')) {
+    console.warn('[paymentService] RAZORPAY_KEY_SECRET appears to contain placeholder angle brackets "<...>"; check your environment settings.')
+  }
+
+  return {
+    isConfigured: missing.length === 0,
+    missing,
+    keyId: rawKeyId || null,
+    keySecret: rawKeySecret || null
+  }
+}
+
+export function createRazorpayClient() {
+  const { isConfigured, missing, keyId, keySecret } = getRazorpayConfig()
+  if (!isConfigured) {
+    console.warn(`[paymentService] Razorpay payment gateway is unconfigured (missing: [${missing.join(', ')}])`)
+    return null
+  }
   return new Razorpay({ key_id: keyId, key_secret: keySecret })
+}
+
+function paymentNotConfigured(res) {
+  return res.status(503).json({
+    success: false,
+    error: {
+      code: 'PAYMENT_NOT_CONFIGURED',
+      message: 'Payment gateway is temporarily unconfigured. Contact the site administrator.'
+    }
+  })
 }
 
 function serviceUnavailable(res) {
@@ -46,7 +80,9 @@ function addDays(date, days) {
 export function createPaymentController({
   paymentStore = createPaymentStore(),
   razorpayFactory = createRazorpayClient,
-  databaseMode = getDbMode
+  databaseMode = getDbMode,
+  getKeyId = () => process.env.RAZORPAY_KEY_ID?.trim(),
+  getKeySecret = () => process.env.RAZORPAY_KEY_SECRET?.trim()
 } = {}) {
   return {
     async createOrder(req, res) {
@@ -71,7 +107,7 @@ export function createPaymentController({
         }
 
         const razorpay = razorpayFactory()
-        if (!razorpay) return serviceUnavailable(res)
+        if (!razorpay) return paymentNotConfigured(res)
 
         const order = await razorpay.orders.create({
           amount: config.amount,
@@ -97,9 +133,15 @@ export function createPaymentController({
           return serviceUnavailable(res)
         }
 
-        return res.json({ id: order.id, amount: config.amount, currency: config.currency, plan })
+        return res.json({
+          id: order.id,
+          amount: config.amount,
+          currency: config.currency,
+          plan,
+          keyId: getKeyId() || null
+        })
       } catch (error) {
-        console.error('Payment order creation failed:', error.code || error.name)
+        console.error('Payment order creation failed:', error.statusCode || error.name || 'Error')
         return res.status(502).json({ error: { code: 'ORDER_CREATION_FAILED', message: 'Failed to create payment order.' } })
       }
     },
@@ -116,8 +158,8 @@ export function createPaymentController({
           return res.status(400).json({ success: false, error: { code: 'INVALID_PLAN', message: 'Payment plan is invalid.' } })
         }
 
-        const secret = process.env.RAZORPAY_KEY_SECRET
-        if (!secret) return serviceUnavailable(res)
+        const secret = getKeySecret()
+        if (!secret) return paymentNotConfigured(res)
         if (!verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature, secret)) {
           return res.status(400).json({ success: false, error: { code: 'INVALID_SIGNATURE', message: 'Payment signature verification failed.' } })
         }
@@ -147,7 +189,7 @@ export function createPaymentController({
         }
 
         const razorpay = razorpayFactory()
-        if (!razorpay) return serviceUnavailable(res)
+        if (!razorpay) return paymentNotConfigured(res)
 
         let providerOrder
         let providerPayment

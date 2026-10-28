@@ -1,8 +1,10 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PLAN_POLICY } from '../../shared/planPolicy.js'
 import { useAuth } from '../context/AuthContext'
 import { apiClient } from '../utils/apiClient'
+import { extractErrorMessage } from '../utils/errorMessage'
+import { loadRazorpayScript } from '../utils/loadRazorpay'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 
@@ -73,43 +75,67 @@ export default function Pricing() {
     setLoading(plan.plan)
 
     try {
+      const scriptReady = await loadRazorpayScript()
+      if (!scriptReady || typeof window.Razorpay !== 'function') {
+        throw new Error('Payment gateway could not be loaded. Check your connection or ad blocker and try again.')
+      }
+
       const { data: order } = await apiClient.post('/api/create-order', {
         plan: plan.plan
       })
 
+      const razorpayKey = order.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID
+      if (!razorpayKey) {
+        throw new Error('Payment gateway key is not configured. Please contact support.')
+      }
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: order.amount,
-        currency: 'INR',
-        name: 'ResumeAI',
-        description: `Pro ${plan.plan === 'annual' ? 'Annual' : 'Monthly'} Plan`,
+        currency: order.currency || 'INR',
+        name: 'ResumeAI4u',
+        description: `Pro ${plan.plan === 'annual' ? 'Annual (365 days)' : 'Monthly (30 days)'}`,
         order_id: order.id,
         handler: async (response) => {
+          const verifyToast = toast.loading('Verifying payment...')
           try {
             const { data } = await apiClient.post('/api/verify-payment', {
               ...response,
               plan: plan.plan
             })
             if (data.success) {
-              toast.success('Payment verified. Your plan is active.')
+              toast.success('Payment verified! Your Pro plan is active.', { id: verifyToast })
               navigate('/dashboard')
+            } else {
+              toast.error(data.message || 'Payment verification was not completed.', { id: verifyToast })
             }
           } catch (err) {
-            toast.error('Payment could not be verified yet. Contact support before paying again.')
+            toast.error(extractErrorMessage(err, 'Payment could not be verified yet. Contact support before paying again.'), { id: verifyToast })
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(null)
+            toast('Checkout closed', { icon: 'ℹ️' })
           }
         },
         prefill: {
           name: user?.displayName || '',
           email: user?.email || ''
         },
-        theme: { color: '#171717' }
+        theme: { color: '#09090b' }
       }
 
       const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', (failResponse) => {
+        setLoading(null)
+        console.error('Razorpay payment failed:', failResponse.error?.code || 'unknown')
+        toast.error(failResponse.error?.description || 'Payment was declined or failed. Please try again.')
+      })
       rzp.open()
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'We could not start checkout. Try again.')
-      console.error('Payment order request failed. HTTP status:', err.response?.status || 'network error')
+      toast.error(extractErrorMessage(err, 'We could not start checkout. Try again.'))
+      console.error('Payment order request failed. HTTP status:', err.response?.status || err.message || 'error')
     } finally {
       setLoading(null)
     }

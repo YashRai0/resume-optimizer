@@ -86,3 +86,11 @@ describe('Frontend error message extractor', () => {
     assert.equal(result, 'Safe fallback')
   })
 })
+
+describe('Razorpay script loader', () => {
+  it('resolves cleanly without throwing in non-browser environments', async () => {
+    const { loadRazorpayScript } = await import('../../src/utils/loadRazorpay.js')
+    const loaded = await loadRazorpayScript()
+    assert.equal(loaded, false)
+  })
+})
