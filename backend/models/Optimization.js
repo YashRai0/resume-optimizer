@@ -2,7 +2,8 @@ import mongoose from 'mongoose'
 
 const bulletSchema = new mongoose.Schema({
   original: { type: String, required: true },
-  optimized: { type: String, required: true }
+  optimized: { type: String, required: true },
+  reviewFlags: { type: [String], default: [] }
 }, { _id: false })
 
 const optimizationSchema = new mongoose.Schema({

@@ -1,59 +1,61 @@
-import { useState } from 'react'
-import { useUser } from '@clerk/clerk-react'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
+﻿import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { PLAN_POLICY } from '../../shared/planPolicy.js'
+import { useAuth } from '../context/AuthContext'
+import { apiClient } from '../utils/apiClient'
+import toast from 'react-hot-toast'
+import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 
 const plans = [
   {
-    name: 'Free',
+    name: PLAN_POLICY.free.label,
     price: 0,
     period: 'forever',
     plan: 'free',
     features: [
-      '3 optimizations/month',
+      `${PLAN_POLICY.free.quotas.optimizations} optimizations/month`,
       'ATS score checker',
       'Missing keywords',
-      'Basic bullet rewrite'
+      `${PLAN_POLICY.free.quotas.bulletRewrites} basic bullet rewrite/month`,
+      `Last ${PLAN_POLICY.free.quotas.history} optimization results`
     ],
     cta: 'Get Started Free',
     highlight: false
   },
   {
-    name: 'Pro',
-    price: 299,
-    period: 'per month',
+    name: PLAN_POLICY.monthly.label,
+    price: PLAN_POLICY.monthly.amount / 100,
+    period: `one-time, ${PLAN_POLICY.monthly.durationDays} days`,
     plan: 'monthly',
     features: [
-      'Unlimited optimizations',
+      `Unlimited optimizations for ${PLAN_POLICY.monthly.durationDays} days`,
       'Cover letter generator',
-      'Version history',
-      'Naukri optimization',
-      'Priority support'
+      'Contextual bullet rewriting',
+      'Full optimization history'
     ],
-    cta: 'Get Pro — ₹299/mo',
+    cta: 'Buy 30-day Pro access',
     highlight: true
   },
   {
-    name: 'Pro Annual',
-    price: 199,
-    period: 'per month · billed ₹2,388/yr',
+    name: PLAN_POLICY.annual.label,
+    price: PLAN_POLICY.annual.amount / 100,
+    period: `one-time, ${PLAN_POLICY.annual.durationDays} days`,
     plan: 'annual',
     features: [
-      'Everything in Pro',
-      'LinkedIn optimizer',
-      'Interview prep questions',
-      'Skill gap analysis',
-      '2 months free'
+      `Pro access for ${PLAN_POLICY.annual.durationDays} days`,
+      'Unlimited optimizations',
+      'Cover letter generator',
+      'Contextual bullet rewriting',
+      'Full optimization history',
+      'One-time payment; no automatic renewal'
     ],
-    cta: 'Get Annual — ₹199/mo',
+    cta: 'Buy 365-day Pro access',
     highlight: false
   }
 ]
 
 export default function Pricing() {
-  const { user, isSignedIn } = useUser()
+  const { user, isAuthenticated: isSignedIn } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(null)
 
@@ -71,7 +73,7 @@ export default function Pricing() {
     setLoading(plan.plan)
 
     try {
-      const { data: order } = await axios.post(`${BACKEND_URL}/api/create-order`, {
+      const { data: order } = await apiClient.post('/api/create-order', {
         plan: plan.plan
       })
 
@@ -84,78 +86,82 @@ export default function Pricing() {
         order_id: order.id,
         handler: async (response) => {
           try {
-            const { data } = await axios.post(`${BACKEND_URL}/api/verify-payment`, response)
+            const { data } = await apiClient.post('/api/verify-payment', {
+              ...response,
+              plan: plan.plan
+            })
             if (data.success) {
-              await user.update({ publicMetadata: { plan: 'pro' } })
-              alert('Payment successful! You are now Pro 🎉')
+              toast.success('Payment verified. Your plan is active.')
               navigate('/dashboard')
             }
           } catch (err) {
-            alert('Payment verification failed')
+            toast.error('Payment could not be verified yet. Contact support before paying again.')
           }
         },
         prefill: {
-          name: user?.fullName || '',
-          email: user?.primaryEmailAddress?.emailAddress || ''
+          name: user?.displayName || '',
+          email: user?.email || ''
         },
-        theme: { color: '#2563eb' }
+        theme: { color: '#171717' }
       }
 
       const rzp = new window.Razorpay(options)
       rzp.open()
     } catch (err) {
-      alert('Something went wrong. Try again.')
-      console.error(err)
+      toast.error(err.response?.data?.error?.message || 'We could not start checkout. Try again.')
+      console.error('Payment order request failed. HTTP status:', err.response?.status || 'network error')
     } finally {
       setLoading(null)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="max-w-5xl mx-auto px-4 py-20">
-        <div className="text-center mb-14">
-          <h1 className="text-4xl font-bold mb-4">Simple, honest pricing</h1>
-          <p className="text-gray-400 text-lg">Start free. Upgrade when you're ready.</p>
+    <div className="min-h-screen bg-stone-50 text-stone-950">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
+        <Link to="/" className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-stone-600 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"><ArrowLeft size={16} /> Back to ResumeAI4u</Link>
+        <div className="mx-auto mb-12 mt-12 max-w-2xl text-center sm:mt-16">
+          <p className="text-xs font-semibold uppercase tracking-[.14em] text-blue-800">Plans</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight">Straightforward pricing.</h1>
+          <p className="mt-4 text-base leading-7 text-stone-600">Start free and upgrade when the extra support is useful. Every paid plan is a one-time purchase.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
           {plans.map((plan, i) => (
-            <div key={i} className={`rounded-2xl p-8 border ${plan.highlight ? 'border-blue-500 bg-blue-600/10' : 'border-gray-800 bg-gray-900'}`}>
+            <div key={i} className={`flex flex-col rounded-2xl p-6 border sm:p-7 ${plan.highlight ? 'border-stone-950 bg-white shadow-[0_20px_55px_-40px_rgba(0,0,0,.45)]' : 'border-stone-200 bg-white'}`}>
               {plan.highlight && (
-                <span className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full mb-4 inline-block">
-                  Most Popular
+                <span className="mb-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-stone-950 px-3 py-1 text-xs font-medium text-white">
+                  <ShieldCheck size={13} /> Recommended
                 </span>
               )}
-              <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
+              <h2 className="text-xl font-semibold">{plan.name}</h2>
               <div className="mb-6">
-                <span className="text-4xl font-bold">
+                <span className="text-4xl font-semibold tracking-tight">
                   {plan.price === 0 ? 'Free' : `₹${plan.price}`}
                 </span>
                 {plan.price > 0 && (
-                  <span className="text-gray-400 text-sm ml-2">{plan.period}</span>
+                  <span className="text-stone-600 text-sm ml-2">{plan.period}</span>
                 )}
               </div>
-              <ul className="space-y-3 mb-8">
+              <ul className="mb-8 flex-1 space-y-3 border-t border-stone-200 pt-5">
                 {plan.features.map((feat, j) => (
-                  <li key={j} className="flex items-center gap-2 text-gray-300 text-sm">
-                    <span className="text-green-400">✓</span> {feat}
+                  <li key={j} className="flex items-start gap-2.5 text-stone-700 text-sm leading-5">
+                    <Check size={16} className="mt-0.5 shrink-0 text-blue-800" aria-hidden="true" /> {feat}
                   </li>
                 ))}
               </ul>
               <button
                 onClick={() => handlePayment(plan)}
                 disabled={loading === plan.plan}
-                className={`w-full py-3 rounded-xl font-semibold transition ${plan.highlight ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border border-gray-700 hover:border-gray-500 text-white'}`}
+                className={`min-h-11 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 ${plan.highlight ? 'bg-stone-950 hover:bg-stone-800 text-white' : 'border border-stone-300 bg-white hover:border-stone-500 text-stone-950'}`}
               >
-                {loading === plan.plan ? 'Processing...' : plan.cta}
+                {loading === plan.plan ? 'Opening secure checkout…' : plan.cta}
               </button>
             </div>
           ))}
         </div>
 
-        <p className="text-center text-gray-600 text-sm mt-8">
-          All prices include GST · Cancel anytime · Secure payments via Razorpay
+        <p className="mx-auto mt-7 max-w-2xl text-center text-stone-600 text-sm leading-6">
+          One-time payments via Razorpay. Pro access ends after the displayed term; it does not renew automatically.
         </p>
       </div>
     </div>
